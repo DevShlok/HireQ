@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id            String      @id @default(uuid()) @db.Char(36)
+  name          String      @db.VarChar(255)
+  email         String      @unique @db.VarChar(255)
+  password_hash String      @db.VarChar(255)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @default(now()) @updatedAt
+  interviews    Interview[]
+
+  @@map("companies")
+}
+
+model Interview {
+  id               String             @id @default(uuid()) @db.Char(36)
+  company_id       String             @db.Char(36)
+  title            String             @db.VarChar(255)
+  description      String?            @db.Text
+  job_description  String             @db.Text
+  interview_code   String             @unique @db.VarChar(6)
+  status           String             @default("active") @db.VarChar(50)
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @default(now()) @updatedAt
+  company          Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  sessions         InterviewSession[]
+
+  @@map("interviews")
+}
+
+model InterviewSession {
+  id                            String                @id @default(uuid()) @db.Char(36)
+  interview_id                  String                @db.Char(36)
+  candidate_name                String?               @db.VarChar(255)
+  candidate_email               String?               @db.VarChar(255)
+  status                        String                @default("pending") @db.VarChar(50)
+  started_at                    DateTime?
+  ended_at                      DateTime?
+  recording_enabled             Boolean               @default(true)
+  total_duration                Int?
+  violation_count               Int                   @default(0)
+  camera_permission_granted     Boolean               @default(false)
+  microphone_permission_granted Boolean               @default(false)
+  created_at                    DateTime              @default(now())
+  interview                     Interview             @relation(fields: [interview_id], references: [id], onDelete: Cascade)
+  questions                     Question[]
+  behavioral_analytics          BehavioralAnalytics[]
+  reports                       Report[]
+  recording_clips               RecordingClip[]
+  security_violations           SecurityViolation[]
+  recording_sessions            RecordingSession[]
+
+  @@map("interview_sessions")
+}
+
+model Question {
+  id             String           @id @default(uuid()) @db.Char(36)
+  session_id     String           @db.Char(36)
+  question_text  String           @db.Text
+  question_order Int
+  asked_at       DateTime         @default(now())
+  session        InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  answers        Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id            String   @id @default(uuid()) @db.Char(36)
+  question_id   String   @db.Char(36)
+  answer_text   String?  @db.Text
+  transcript    String?  @db.Text
+  answered_at   DateTime @default(now())
+  question      Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@map("answers")
+}
+
+model BehavioralAnalytics {
+  id            String           @id @default(uuid()) @db.Char(36)
+  session_id    String           @db.Char(36)
+  timestamp     DateTime         @default(now())
+  emotion_score Json?
+  posture_score Json?
+  gaze_data     Json?
+  speech_data   Json?
+  filler_count  Int              @default(0)
+  session       InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("behavioral_analytics")
+}
+
+model Report {
+  id                  String           @id @default(uuid()) @db.Char(36)
+  session_id          String           @db.Char(36)
+  overall_score       Decimal?         @db.Decimal(5, 2)
+  technical_score     Decimal?         @db.Decimal(5, 2)
+  communication_score Decimal?         @db.Decimal(5, 2)
+  confidence_score    Decimal?         @db.Decimal(5, 2)
+  report_data         Json?
+  pdf_path            String?          @db.VarChar(500)
+  generated_at        DateTime         @default(now())
+  session             InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model RecordingClip {
+  id           String           @id @default(uuid()) @db.Char(36)
+  session_id   String           @db.Char(36)
+  clip_number  Int
+  file_name    String           @db.VarChar(255)
+  file_path    String           @db.VarChar(500)
+  file_size    BigInt
+  duration     Int              @default(15)
+  recorded_at  DateTime         @default(now())
+  uploaded_at  DateTime         @default(now())
+  mime_type    String?          @default("video/webm") @db.VarChar(100)
+  session      InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("recording_clips")
+}
+
+model SecurityViolation {
+  id                String           @id @default(uuid()) @db.Char(36)
+  session_id        String           @db.Char(36)
+  violation_type    String           @db.VarChar(100)
+  violation_message String?          @db.Text
+  occurred_at       DateTime         @default(now())
+  session           InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("security_violations")
+}
+
+model RecordingSession {
+  id                   String           @id @default(uuid()) @db.Char(36)
+  session_id           String           @db.Char(36)
+  total_clips          Int              @default(0)
+  total_violations     Int              @default(0)
+  recording_started_at DateTime?
+  recording_ended_at   DateTime?
+  camera_status        String?          @default("active") @db.VarChar(50)
+  microphone_status    String?          @default("active") @db.VarChar(50)
+  stream_quality       Json?
+  created_at           DateTime         @default(now())
+  session              InterviewSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("recording_sessions")
+}

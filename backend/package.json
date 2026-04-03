@@ -1,0 +1,11 @@
+{
+  "name": "hireq-backend",
+  "version": "1.0.0",
+  "description": "HireQ Backend Services",
+  "private": true,
+  "scripts": {
+    "dev": "cd api-gateway && npm run dev",
+    "build": "cd api-gateway && npm run build",
+    "start": "cd api-gateway && npm run start"
+  }
+}
