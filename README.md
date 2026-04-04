@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 HireQ
+# HireQ
 
 ### AI-Powered End-to-End Interview Automation Platform
 
@@ -21,38 +21,39 @@
 
 </div>
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [✨ Key Features](#-key-features)
-- [🏗️ System Architecture](#️-system-architecture)
-- [🗄️ Database Schema](#️-database-schema)
-- [🧰 Tech Stack](#-tech-stack)
-- [📁 Project Structure](#-project-structure)
-- [⚙️ Setup & Installation](#️-setup--installation)
-- [🚀 Running the Project](#-running-the-project)
-- [🔌 API Reference](#-api-reference)
-- [🤝 Contributing](#-contributing)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Data Flow](#data-flow)
+- [Database Schema](#database-schema)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Setup & Installation](#setup--installation)
+- [Running the Project](#running-the-project)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 | Feature | Description |
 |---|---|
-| 🏢 **Company Dashboard** | Register, login, and manage all your open interview positions from a central dashboard |
-| 🎯 **AI Question Generation** | Automatically generates role-specific interview questions using **Llama LLM** based on the job description |
-| 🗣️ **Text-to-Speech Delivery** | Questions are read aloud to candidates in natural-sounding voice via the **Kokoro TTS** engine |
-| 🎙️ **Speech-to-Text Transcription** | Candidate spoken answers are transcribed in real time through **OpenAI Whisper** |
-| 📊 **Behavioral Analytics** | Tracks emotion, gaze, posture, speech patterns, and filler word usage throughout the interview |
-| 🔒 **Security Monitoring** | Detects and records tab switches, focus loss, and other integrity violations during sessions |
-| 📹 **Session Recording** | Video and audio are captured in rolling 15-second clips for post-session review |
-| 📄 **Automated Reporting** | Generates comprehensive candidate reports with technical, communication, and confidence scores |
-| 🔑 **OTP Interview Codes** | Unique 6-character codes let candidates join interviews without requiring an account |
-| 🔐 **JWT Authentication** | Secure company authentication with bcrypt password hashing and JWT tokens |
+| **Company Dashboard** | Register, login, and manage all your open interview positions from a central dashboard |
+| **AI Question Generation** | Automatically generates role-specific interview questions using **Llama LLM** based on the job description |
+| **Text-to-Speech Delivery** | Questions are read aloud to candidates in natural-sounding voice via the **Kokoro TTS** engine |
+| **Speech-to-Text Transcription** | Candidate spoken answers are transcribed in real time through **OpenAI Whisper** |
+| **Behavioral Analytics** | Tracks emotion, gaze, posture, speech patterns, and filler word usage throughout the interview |
+| **Security Monitoring** | Detects and records tab switches, focus loss, and other integrity violations during sessions |
+| **Session Recording** | Video and audio are captured in rolling 15-second clips for post-session review |
+| **Automated Reporting** | Generates comprehensive candidate reports with technical, communication, and confidence scores |
+| **OTP Interview Codes** | Unique 6-character codes let candidates join interviews without requiring an account |
+| **JWT Authentication** | Secure company authentication with bcrypt password hashing and JWT tokens |
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 HireQ follows a **microservices architecture** with four core layers that communicate over REST/HTTP:
 
@@ -62,12 +63,12 @@ flowchart TD
     User((Candidate / Company))
     
     %% Frontend
-    subgraph Frontend ["🖥️ Frontend (React + Vite + TypeScript)"]
+    subgraph Frontend ["Frontend (React + Vite + TypeScript)"]
         UI[Web Application Interface\n- Company Dashboard\n- Interview Session UI\n- Auth Pages]
     end
 
     %% Backend Gateway
-    subgraph APIGateway ["🔀 API Gateway (Node.js + Express)"]
+    subgraph APIGateway ["API Gateway (Node.js + Express)"]
         Auth[Auth Routes\n/api/auth/]
         Interviews[Interview Routes\n/api/interviews/]
         Prisma[Prisma ORM]
@@ -77,13 +78,13 @@ flowchart TD
     end
 
     %% Microservices
-    subgraph Services ["🤖 AI & Processing Microservices (Python)"]
+    subgraph Services ["AI & Processing Microservices (Python)"]
         AIService[AI Service - FastAPI\n- Llama: Question Gen & Eval\n- Whisper: Answer Transcription]
         TTSService[TTS Service\n- Kokoro: Text-to-Speech]
     end
 
     %% Database
-    subgraph DatabaseLayer ["🗄️ Database (MySQL)"]
+    subgraph DatabaseLayer ["Database (MySQL)"]
         DB[(HireQ Database\n- companies\n- interviews\n- sessions\n- recordings)]
     end
 
@@ -101,7 +102,73 @@ flowchart TD
 
 ---
 
-## 🗄️ Database Schema
+## Data Flow
+
+The following sequence diagram illustrates the complete lifecycle of an AI interview — from company setup to candidate evaluation:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Company
+    actor Candidate
+    participant UI as Frontend App
+    participant API as API Gateway
+    participant AI as AI Service
+    participant DB as MySQL Database
+
+    rect rgb(230, 243, 255)
+        Note over Company,DB: Phase 1: Interview Creation
+        Company->>UI: Login & fill job description details
+        UI->>API: POST /api/interviews/create
+        API->>DB: Save job details & generate unique OTP code
+        DB-->>API: Return Interview ID & Code
+        API-->>UI: Display 6-char interview code
+        Company-->>Candidate: Share code via email/link
+    end
+
+    rect rgb(255, 245, 230)
+        Note over Candidate,DB: Phase 2: Candidate Join
+        Candidate->>UI: Enter interview code & personal details
+        UI->>API: POST /api/interviews/join
+        API->>DB: Validate code, create interview_sessions record
+        DB-->>API: Session initialized
+        API-->>UI: Return Session ID
+    end
+    
+    rect rgb(235, 255, 235)
+        Note over Candidate,DB: Phase 3: AI Interview Execution
+        UI->>API: Start Session (load questions)
+        API->>AI: Generate questions via Llama (JD + Role context)
+        AI-->>API: Return AI-generated question set
+        API->>DB: Insert into 'questions' table
+        API-->>UI: Deliver question (Text + Kokoro TTS Audio)
+        
+        loop For each interview question
+            Candidate->>UI: Speaks answer (live audio/video recording)
+            UI->>API: Send audio/video stream
+            API->>AI: Transcribe answer via OpenAI Whisper
+            AI-->>API: Return answer transcript
+            API->>DB: Insert into 'answers' & 'behavioral_analytics' tables
+        end
+    end
+    
+    rect rgb(248, 235, 255)
+        Note over Company,DB: Phase 4: Report Generation & Review
+        API->>DB: Retrieve all session transcripts
+        API->>AI: Evaluate candidate & generate report via Llama
+        AI-->>API: Return final scores & written report
+        API->>DB: Save aggregated scores, finalize session
+        UI->>API: GET /api/interviews (Company Dashboard)
+        API->>DB: Retrieve candidate sessions & reports
+        DB-->>API: Return aggregated candidate view
+        API-->>UI: Display performance metrics to Company
+        Company->>UI: Reviews final candidate performance report
+    end
+```
+
+---
+
+## Database Schema
 
 The database is managed via **Prisma ORM** on top of **MySQL**. Below is the complete entity relationship map:
 
@@ -188,7 +255,7 @@ erDiagram
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 ### Frontend
 | Technology | Version | Purpose |
@@ -239,11 +306,11 @@ erDiagram
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 HireQ/
-├── 📁 frontend/                    # React + TypeScript + Vite
+├── frontend/                    # React + TypeScript + Vite
 │   ├── src/
 │   │   ├── pages/
 │   │   │   ├── Home.tsx            # Landing page
@@ -257,8 +324,8 @@ HireQ/
 │   ├── index.html
 │   └── package.json
 │
-├── 📁 backend/
-│   ├── 📁 api-gateway/             # Node.js + Express REST API
+├── backend/
+│   ├── api-gateway/             # Node.js + Express REST API
 │   │   ├── src/
 │   │   │   ├── routes/
 │   │   │   │   ├── auth.ts         # /api/auth — login, register
@@ -269,21 +336,21 @@ HireQ/
 │   │   └── prisma/
 │   │       └── schema.prisma       # Full Prisma data model
 │   │
-│   ├── 📁 ai-service/              # Python FastAPI — Llama + Whisper
+│   ├── ai-service/              # Python FastAPI — Llama + Whisper
 │   │   ├── app/
 │   │   │   └── main.py             # FastAPI entry point
 │   │   └── requirements.txt
 │   │
-│   └── 📁 tts-service/             # Python FastAPI — Kokoro TTS
+│   └── tts-service/             # Python FastAPI — Kokoro TTS
 │       ├── app/
 │       └── requirements.txt
 │
-├── 📁 database/
+├── database/
 │   ├── schema.sql                  # Raw MySQL schema (seed/init)
 │   ├── migrations/                 # SQL migration files
 │   └── seeds/                      # Sample data seeders
 │
-├── 📁 models/
+├── models/
 │   └── TTS/                        # Kokoro TTS model weights
 │
 ├── .gitignore
@@ -292,7 +359,7 @@ HireQ/
 
 ---
 
-## ⚙️ Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 
@@ -357,7 +424,7 @@ PORT=3001
 JWT_SECRET="your_super_secret_jwt_key"
 ```
 
-> Replace `<YOUR_PASSWORD>` with your MySQL root password. If using default XAMPP with no password, leave it blank or omit it: `mysql://root:@localhost:3306/hireq_db`
+> Replace `<YOUR_PASSWORD>` with your MySQL root password. If using default XAMPP with no password, leave it blank or omit it: `mysql://root:@localhost:3306/hireq_db"
 
 #### Run Prisma Migrations
 
@@ -431,7 +498,7 @@ VITE_TTS_SERVICE_URL=http://localhost:8001
 
 ---
 
-## 🚀 Running the Project
+## Running the Project
 
 You need to start **4 services simultaneously** in separate terminal windows:
 
@@ -477,7 +544,7 @@ npm run dev
 # Runs on http://localhost:5173
 ```
 
-### ✅ Service Health Check
+### Service Health Check
 
 | Service | URL | Status Endpoint |
 |---|---|---|
@@ -488,7 +555,7 @@ npm run dev
 
 ---
 
-## 🔌 API Reference
+## API Reference
 
 ### Auth Routes — `/api/auth`
 
@@ -510,7 +577,7 @@ npm run dev
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! To contribute:
 
@@ -524,8 +591,8 @@ Contributions are welcome! To contribute:
 
 <div align="center">
 
-Made with ❤️ by [DevShlok](https://github.com/DevShlok)
+Maintained by [DevShlok](https://github.com/DevShlok)
 
-⭐ Star [this repo](https://github.com/DevShlok/HireQ) if you find it useful!
+Star [this repo](https://github.com/DevShlok/HireQ) if you find it useful!
 
 </div>
